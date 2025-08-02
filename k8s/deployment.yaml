@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clockbucks-api
+  namespace: clockbucks
+  labels:
+    app: clockbucks-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clockbucks-api
+  template:
+    metadata:
+      labels:
+        app: clockbucks-api
+    spec:
+      containers:
+      - name: clockbucks-api
+        image: clockbucks-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: clockbucks-config
+              key: DEBUG
+        - name: HOST
+          valueFrom:
+            configMapKeyRef:
+              name: clockbucks-config
+              key: HOST
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: clockbucks-config
+              key: PORT
+        - name: ALLOWED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: clockbucks-config
+              key: ALLOWED_ORIGINS
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: clockbucks-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+      restartPolicy: Always
