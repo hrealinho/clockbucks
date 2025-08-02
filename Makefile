@@ -8,7 +8,14 @@ help:
 	@echo "  dev-install   Install development dependencies"
 	@echo "  test          Run tests with coverage"
 	@echo "  lint          Run linting (flake8, mypy)"
+	@echo "  lint-fix      Auto-fix linting issues"
+	@echo "  security      Run security checks (bandit, safety)"
+	@echo "  complexity    Check code complexity"
+	@echo "  pre-commit    Run pre-commit hooks"
 	@echo "  format        Format code (black, isort)"
+	@echo "  format-check  Check code formatting"
+	@echo "  check         Run all quality checks"
+	@echo "  quality       Comprehensive quality check with metrics"
 	@echo "  clean         Clean build artifacts"
 	@echo "  build         Build Docker image"
 	@echo "  run           Run development server"
@@ -22,7 +29,7 @@ install:
 
 dev-install:
 	pip install -r requirements.txt
-	pip install pre-commit
+	pip install -r requirements-dev.txt
 	pre-commit install
 
 # Testing
@@ -36,6 +43,20 @@ test-quick:
 lint:
 	flake8 src tests
 	mypy src
+
+lint-fix:
+	autopep8 --in-place --recursive src tests
+
+security:
+	bandit -r src -f json -o bandit-report.json || true
+	safety check --json --output safety-report.json || true
+
+complexity:
+	radon cc src --min B
+	radon mi src --min B
+
+pre-commit:
+	pre-commit run --all-files
 
 format:
 	black src tests
@@ -105,7 +126,11 @@ dev-setup: dev-install
 	@echo "Development environment ready!"
 
 # All quality checks
-check: format-check lint test
+check: format-check lint security test
+
+# Comprehensive quality check with metrics
+quality: format-check lint complexity security test
+	@echo "All quality checks completed!"
 
 # Build and test pipeline
 ci: clean install check

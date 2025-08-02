@@ -9,13 +9,14 @@ from src.logging_config import app_logger
 from src.database import init_db
 from src.exceptions import ClockBucksException, map_exception_to_http
 from src.middleware.security import (
-    RequestLoggingMiddleware, 
-    SecurityHeadersMiddleware, 
-    RateLimitMiddleware
+    RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
+    RateLimitMiddleware,
 )
 from src.routes import meetings, participants
 
 logger = logging.getLogger("clockbucks.main")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,18 +25,19 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
-    
+
     try:
         await init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Application shutting down")
+
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -76,21 +78,12 @@ app = FastAPI(
     contact={
         "name": "Clock Bucks API Support",
         "url": "https://github.com/hrealinho/clockbucks",
-        "email": "support@clockbucks.com"
+        "email": "support@clockbucks.com",
     },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    },
+    license_info={"name": "MIT License", "url": "https://opensource.org/licenses/MIT"},
     servers=[
-        {
-            "url": "http://localhost:8000",
-            "description": "Development server"
-        },
-        {
-            "url": "https://api.clockbucks.com",
-            "description": "Production server"
-        }
+        {"url": "http://localhost:8000", "description": "Development server"},
+        {"url": "https://api.clockbucks.com", "description": "Production server"},
     ],
     tags_metadata=[
         {
@@ -105,15 +98,15 @@ app = FastAPI(
             "name": "participants",
             "description": "Manage meeting participants, their roles, and hourly rates.",
             "externalDocs": {
-                "description": "Participant Management Documentation", 
+                "description": "Participant Management Documentation",
                 "url": "https://docs.clockbucks.com/participants",
             },
         },
         {
             "name": "system",
             "description": "System health, metrics, and API information endpoints.",
-        }
-    ]
+        },
+    ],
 )
 
 # Add middleware
@@ -122,9 +115,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 if settings.RATE_LIMIT_ENABLED:
     app.add_middleware(
-        RateLimitMiddleware,
-        calls=settings.RATE_LIMIT_PER_MINUTE,
-        period=60
+        RateLimitMiddleware, calls=settings.RATE_LIMIT_PER_MINUTE, period=60
     )
 
 # Configure CORS
@@ -136,6 +127,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Exception handlers
 @app.exception_handler(ClockBucksException)
 async def custom_exception_handler(request: Request, exc: ClockBucksException):
@@ -144,8 +136,9 @@ async def custom_exception_handler(request: Request, exc: ClockBucksException):
     return JSONResponse(
         status_code=http_exc.status_code,
         content=http_exc.detail,
-        headers={"X-Request-ID": getattr(request.state, "request_id", "unknown")}
+        headers={"X-Request-ID": getattr(request.state, "request_id", "unknown")},
     )
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
@@ -154,33 +147,34 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(
         f"Unhandled exception: {str(exc)}",
         extra={"request_id": request_id},
-        exc_info=True
+        exc_info=True,
     )
-    
+
     return JSONResponse(
         status_code=500,
         content={
             "message": "Internal server error",
             "error_code": "INTERNAL_ERROR",
-            "details": {} if not settings.DEBUG else {"error": str(exc)}
+            "details": {} if not settings.DEBUG else {"error": str(exc)},
         },
-        headers={"X-Request-ID": request_id}
+        headers={"X-Request-ID": request_id},
     )
 
+
 # Include routers
+app.include_router(meetings.router, prefix=settings.API_V1_STR, tags=["meetings"])
 app.include_router(
-    meetings.router, 
-    prefix=settings.API_V1_STR, 
-    tags=["meetings"]
-)
-app.include_router(
-    participants.router, 
-    prefix=settings.API_V1_STR, 
-    tags=["participants"]
+    participants.router, prefix=settings.API_V1_STR, tags=["participants"]
 )
 
+
 # Root endpoints
-@app.get("/", tags=["system"], summary="API Information", description="Get basic API information and service details")
+@app.get(
+    "/",
+    tags=["system"],
+    summary="API Information",
+    description="Get basic API information and service details",
+)
 async def root():
     """Root endpoint with basic API information."""
     return {
@@ -188,25 +182,37 @@ async def root():
         "version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT,
         "docs_url": "/docs" if settings.DEBUG else None,
-        "health_check": "/health"
+        "health_check": "/health",
     }
 
-@app.get("/health", tags=["system"], summary="Health Check", description="Check API health status for monitoring and load balancers")
+
+@app.get(
+    "/health",
+    tags=["system"],
+    summary="Health Check",
+    description="Check API health status for monitoring and load balancers",
+)
 async def health_check():
     """Health check endpoint for monitoring."""
     return {
         "status": "healthy",
         "service": "clock-bucks-api",
         "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
     }
 
-@app.get("/metrics", tags=["system"], summary="Service Metrics", description="Get basic service metrics (extensible with Prometheus)")
+
+@app.get(
+    "/metrics",
+    tags=["system"],
+    summary="Service Metrics",
+    description="Get basic service metrics (extensible with Prometheus)",
+)
 async def metrics():
     """Basic metrics endpoint (can be extended with Prometheus)."""
     if not settings.ENABLE_METRICS:
         raise HTTPException(status_code=404, detail="Metrics not enabled")
-    
+
     # Basic metrics - extend with prometheus_client for production
     return {
         "service": "clock-bucks-api",

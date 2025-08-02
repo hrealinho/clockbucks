@@ -8,10 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Create engine
 engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    echo=settings.DEBUG
+    settings.DATABASE_URL, pool_pre_ping=True, pool_recycle=300, echo=settings.DEBUG
 )
 
 # Create SessionLocal class
@@ -22,6 +19,7 @@ Base = declarative_base()
 
 # Metadata for migrations
 metadata = MetaData()
+
 
 def get_db():
     """Dependency to get database session."""
@@ -34,6 +32,7 @@ def get_db():
         raise
     finally:
         db.close()
+
 
 async def init_db():
     """Initialize database tables."""

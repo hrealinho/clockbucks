@@ -4,7 +4,13 @@ from datetime import datetime
 import uuid
 from sqlalchemy.orm import Session
 
-from src.models.meeting import Meeting, MeetingCreate, MeetingUpdate, MeetingCostCalculation, MeetingResponse
+from src.models.meeting import (
+    Meeting,
+    MeetingCreate,
+    MeetingUpdate,
+    MeetingCostCalculation,
+    MeetingResponse,
+)
 from src.models.participant import Participant
 from src.models.db.meeting import DBMeeting, DBMeetingParticipant
 from src.services.calculator import MeetingCostCalculator
@@ -13,12 +19,14 @@ from src.database import get_db
 
 router = APIRouter()
 
+
 def get_meeting_repository(db: Session = Depends(get_db)) -> MeetingRepository:
     """Dependency to get meeting repository."""
     return MeetingRepository(db)
 
+
 @router.post(
-    "/meetings/calculate", 
+    "/meetings/calculate",
     response_model=MeetingCostCalculation,
     summary="Calculate Meeting Cost",
     description="Calculate the total cost of a meeting based on participants and duration. This endpoint performs cost calculations and optionally stores the meeting record.",
@@ -38,31 +46,29 @@ def get_meeting_repository(db: Session = Depends(get_db)) -> MeetingRepository:
                         "participant_costs": [
                             {
                                 "name": "John Doe",
-                                "role": "Senior Developer", 
+                                "role": "Senior Developer",
                                 "hourly_rate": 75.0,
-                                "cost": 75.0
+                                "cost": 75.0,
                             },
                             {
                                 "name": "Jane Smith",
                                 "role": "Product Manager",
-                                "hourly_rate": 85.0, 
-                                "cost": 85.0
-                            }
+                                "hourly_rate": 85.0,
+                                "cost": 85.0,
+                            },
                         ],
-                        "calculation_time": "2025-01-15T10:00:00Z"
+                        "calculation_time": "2025-01-15T10:00:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid meeting data",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Meeting duration must be greater than 0"
-                    }
+                    "example": {"detail": "Meeting duration must be greater than 0"}
                 }
-            }
+            },
         },
         422: {
             "description": "Validation error",
@@ -73,29 +79,29 @@ def get_meeting_repository(db: Session = Depends(get_db)) -> MeetingRepository:
                             {
                                 "loc": ["body", "participants"],
                                 "msg": "ensure this value has at least 1 items",
-                                "type": "value_error.list.min_items"
+                                "type": "value_error.list.min_items",
                             }
                         ]
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def calculate_meeting_cost(
     meeting: MeetingCreate,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_repo: MeetingRepository = Depends(get_meeting_repository),
 ):
     """
     Calculate the cost of a meeting based on participants and duration.
-    
+
     This endpoint:
     - Validates meeting data including participants and duration
     - Calculates total meeting cost based on participant hourly rates
     - Provides per-participant cost breakdown
     - Optionally stores the meeting record for future reference
     - Returns detailed cost analysis including cost per minute
-    
+
     **Cost Calculation Formula:**
     - Individual Cost = (Hourly Rate / 60) * Duration in Minutes
     - Total Cost = Sum of all individual participant costs
@@ -107,27 +113,30 @@ async def calculate_meeting_cost(
         title=meeting.title,
         duration_minutes=meeting.duration_minutes,
         participants=meeting.participants,
-        start_time=meeting.start_time
+        start_time=meeting.start_time,
     )
-    
+
     # Calculate the cost
     cost_calculation = MeetingCostCalculator.calculate_meeting_cost(meeting_obj)
-    
+
     # Store the meeting in database
     try:
         db_meeting = meeting_repo.create(meeting)
-        
+
         # Update with calculated cost
-        meeting_repo.update(db_meeting, MeetingUpdate(total_cost=cost_calculation.total_cost))
-        
+        meeting_repo.update(
+            db_meeting, MeetingUpdate(total_cost=cost_calculation.total_cost)
+        )
+
         # Update the cost calculation with the database ID
         cost_calculation.meeting_id = str(db_meeting.id)
-        
+
     except Exception as e:
         # If database save fails, still return the calculation
         print(f"Warning: Could not save meeting to database: {e}")
-    
+
     return cost_calculation
+
 
 @router.post(
     "/meetings/real-time-cost",
@@ -148,61 +157,64 @@ async def calculate_meeting_cost(
                             {
                                 "name": "John Doe",
                                 "current_cost": 31.25,
-                                "hourly_rate": 75.0
+                                "hourly_rate": 75.0,
                             },
                             {
-                                "name": "Jane Smith", 
+                                "name": "Jane Smith",
                                 "current_cost": 35.42,
-                                "hourly_rate": 85.0
-                            }
+                                "hourly_rate": 85.0,
+                            },
                         ],
-                        "projected_hourly_cost": 160.0
+                        "projected_hourly_cost": 160.0,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid elapsed time",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Elapsed minutes must be greater than 0"
-                    }
+                    "example": {"detail": "Elapsed minutes must be greater than 0"}
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def calculate_real_time_cost(
     participants: List[Participant],
-    elapsed_minutes: int = Query(..., gt=0, description="Minutes elapsed since meeting started")
+    elapsed_minutes: int = Query(
+        ..., gt=0, description="Minutes elapsed since meeting started"
+    ),
 ):
     """
     Calculate real-time cost during an ongoing meeting.
-    
+
     This endpoint is perfect for:
     - Live cost tracking during meetings
     - Real-time budget awareness
     - Cost-conscious meeting management
     - Meeting efficiency optimization
-    
+
     **Usage:**
     - Call this endpoint periodically during a meeting
     - Provide the list of current participants
     - Specify how many minutes have elapsed
     - Get instant cost calculations
-    
+
     **Returns:**
     - Current total cost based on elapsed time
     - Per-participant cost breakdown
     - Projected full hour cost
     - Cost per minute rate
     """
-    cost_info = MeetingCostCalculator.calculate_real_time_cost(participants, elapsed_minutes)
+    cost_info = MeetingCostCalculator.calculate_real_time_cost(
+        participants, elapsed_minutes
+    )
     return cost_info
 
+
 @router.post(
-    "/meetings", 
+    "/meetings",
     response_model=MeetingResponse,
     status_code=201,
     summary="Create New Meeting",
@@ -221,15 +233,15 @@ async def calculate_real_time_cost(
                             {
                                 "name": "John Doe",
                                 "hourly_rate": 75.0,
-                                "role": "Senior Developer"
+                                "role": "Senior Developer",
                             }
                         ],
                         "start_time": "2025-01-15T10:00:00Z",
                         "total_cost": 75.0,
-                        "created_at": "2025-01-15T09:45:00Z"
+                        "created_at": "2025-01-15T09:45:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid meeting data or creation failed",
@@ -239,24 +251,24 @@ async def calculate_real_time_cost(
                         "detail": "Could not create meeting: Invalid participant data"
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def create_meeting(
     meeting: MeetingCreate,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_repo: MeetingRepository = Depends(get_meeting_repository),
 ):
     """
     Create a new meeting record.
-    
+
     This endpoint:
     - Creates a persistent meeting record
     - Assigns a unique meeting ID
     - Stores participant information
     - Records creation timestamp
     - Enables future cost tracking and reporting
-    
+
     **Use Cases:**
     - Schedule future meetings with cost estimates
     - Create meeting records for accounting purposes
@@ -265,7 +277,7 @@ async def create_meeting(
     """
     try:
         db_meeting = meeting_repo.create(meeting)
-        
+
         # Convert to response model
         return MeetingResponse(
             id=str(db_meeting.id),
@@ -274,13 +286,16 @@ async def create_meeting(
             participants=meeting.participants,  # Use original participants data
             start_time=db_meeting.start_time,
             total_cost=db_meeting.total_cost,
-            created_at=db_meeting.created_at
+            created_at=db_meeting.created_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not create meeting: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Could not create meeting: {str(e)}"
+        )
+
 
 @router.get(
-    "/meetings", 
+    "/meetings",
     response_model=List[MeetingResponse],
     summary="List All Meetings",
     description="Retrieve all meetings with optional filtering and pagination. Perfect for meeting history, reporting, and analytics.",
@@ -299,54 +314,62 @@ async def create_meeting(
                                 {
                                     "name": "John Doe",
                                     "hourly_rate": 75.0,
-                                    "role": "Senior Developer"
+                                    "role": "Senior Developer",
                                 }
                             ],
                             "start_time": "2025-01-15T10:00:00Z",
                             "total_cost": 75.0,
-                            "created_at": "2025-01-15T09:45:00Z"
+                            "created_at": "2025-01-15T09:45:00Z",
                         }
                     ]
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid query parameters",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Invalid pagination parameters"
-                    }
+                    "example": {"detail": "Invalid pagination parameters"}
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def get_all_meetings(
     skip: int = Query(0, ge=0, description="Number of meetings to skip for pagination"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of meetings to return"),
-    status: Optional[str] = Query(None, description="Filter by meeting status (e.g., 'scheduled', 'in-progress', 'completed')"),
-    meeting_type: Optional[str] = Query(None, description="Filter by meeting type (e.g., 'sprint-planning', 'standup', 'review')"),
-    search: Optional[str] = Query(None, description="Search term to match against meeting title and description"),
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of meetings to return"
+    ),
+    status: Optional[str] = Query(
+        None,
+        description="Filter by meeting status (e.g., 'scheduled', 'in-progress', 'completed')",
+    ),
+    meeting_type: Optional[str] = Query(
+        None,
+        description="Filter by meeting type (e.g., 'sprint-planning', 'standup', 'review')",
+    ),
+    search: Optional[str] = Query(
+        None, description="Search term to match against meeting title and description"
+    ),
+    meeting_repo: MeetingRepository = Depends(get_meeting_repository),
 ):
     """
     Get all meetings with optional filtering and pagination.
-    
+
     This endpoint supports:
     - **Pagination**: Use `skip` and `limit` for efficient data loading
-    - **Status Filtering**: Filter by meeting status for workflow management  
+    - **Status Filtering**: Filter by meeting status for workflow management
     - **Type Filtering**: Filter by meeting type for categorization
     - **Text Search**: Search meeting titles and descriptions
     - **Sorting**: Results ordered by creation date (newest first)
-    
+
     **Use Cases:**
     - Meeting history and audit trails
     - Cost reporting and analytics
     - Meeting pattern analysis
     - Administrative dashboards
     - Budget planning based on historical data
-    
+
     **Performance Notes:**
     - Results are paginated for optimal performance
     - Use filters to reduce result set size
@@ -354,14 +377,14 @@ async def get_all_meetings(
     """
     filters = {}
     if status:
-        filters['status'] = status
+        filters["status"] = status
     if meeting_type:
-        filters['meeting_type'] = meeting_type
+        filters["meeting_type"] = meeting_type
     if search:
-        filters['search'] = search
-    
+        filters["search"] = search
+
     db_meetings = meeting_repo.get_multi(skip=skip, limit=limit, filters=filters)
-    
+
     # Convert to response models
     meetings_response = []
     for db_meeting in db_meetings:
@@ -369,29 +392,34 @@ async def get_all_meetings(
         participants = []
         for mp in db_meeting.participants:
             if mp.participant:
-                participants.append(Participant(
-                    id=str(mp.participant.id),
-                    name=mp.participant.name,
-                    email=mp.participant.email,
-                    hourly_rate=mp.hourly_rate_at_time,
-                    role=mp.participant.role,
-                    department=mp.participant.department
-                ))
-        
-        meetings_response.append(MeetingResponse(
-            id=str(db_meeting.id),
-            title=db_meeting.title,
-            duration_minutes=db_meeting.duration_minutes,
-            participants=participants,
-            start_time=db_meeting.start_time,
-            total_cost=db_meeting.total_cost,
-            created_at=db_meeting.created_at
-        ))
-    
+                participants.append(
+                    Participant(
+                        id=str(mp.participant.id),
+                        name=mp.participant.name,
+                        email=mp.participant.email,
+                        hourly_rate=mp.hourly_rate_at_time,
+                        role=mp.participant.role,
+                        department=mp.participant.department,
+                    )
+                )
+
+        meetings_response.append(
+            MeetingResponse(
+                id=str(db_meeting.id),
+                title=db_meeting.title,
+                duration_minutes=db_meeting.duration_minutes,
+                participants=participants,
+                start_time=db_meeting.start_time,
+                total_cost=db_meeting.total_cost,
+                created_at=db_meeting.created_at,
+            )
+        )
+
     return meetings_response
 
+
 @router.get(
-    "/meetings/{meeting_id}", 
+    "/meetings/{meeting_id}",
     response_model=MeetingResponse,
     summary="Get Meeting by ID",
     description="Retrieve detailed information about a specific meeting including participants and cost data.",
@@ -412,52 +440,43 @@ async def get_all_meetings(
                                 "email": "john.doe@company.com",
                                 "hourly_rate": 75.0,
                                 "role": "Senior Developer",
-                                "department": "Engineering"
+                                "department": "Engineering",
                             }
                         ],
                         "start_time": "2025-01-15T10:00:00Z",
                         "total_cost": 75.0,
-                        "created_at": "2025-01-15T09:45:00Z"
+                        "created_at": "2025-01-15T09:45:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid meeting ID format",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Invalid meeting ID format"
-                    }
-                }
-            }
+                "application/json": {"example": {"detail": "Invalid meeting ID format"}}
+            },
         },
         404: {
             "description": "Meeting not found",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Meeting not found"
-                    }
-                }
-            }
-        }
-    }
+                "application/json": {"example": {"detail": "Meeting not found"}}
+            },
+        },
+    },
 )
 async def get_meeting(
-    meeting_id: str,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_id: str, meeting_repo: MeetingRepository = Depends(get_meeting_repository)
 ):
     """
     Get a specific meeting by ID.
-    
+
     This endpoint:
     - Validates the meeting ID format (UUID)
     - Retrieves complete meeting information
     - Includes participant details with historical hourly rates
     - Returns full cost information
     - Provides creation metadata
-    
+
     **Use Cases:**
     - Meeting detail views in applications
     - Cost analysis and reporting
@@ -469,24 +488,26 @@ async def get_meeting(
         meeting_uuid = uuid.UUID(meeting_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid meeting ID format")
-    
+
     db_meeting = meeting_repo.get(meeting_uuid)
     if not db_meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
+
     # Convert participants from database format
     participants = []
     for mp in db_meeting.participants:
         if mp.participant:
-            participants.append(Participant(
-                id=str(mp.participant.id),
-                name=mp.participant.name,
-                email=mp.participant.email,
-                hourly_rate=mp.hourly_rate_at_time,
-                role=mp.participant.role,
-                department=mp.participant.department
-            ))
-    
+            participants.append(
+                Participant(
+                    id=str(mp.participant.id),
+                    name=mp.participant.name,
+                    email=mp.participant.email,
+                    hourly_rate=mp.hourly_rate_at_time,
+                    role=mp.participant.role,
+                    department=mp.participant.department,
+                )
+            )
+
     return MeetingResponse(
         id=str(db_meeting.id),
         title=db_meeting.title,
@@ -494,11 +515,12 @@ async def get_meeting(
         participants=participants,
         start_time=db_meeting.start_time,
         total_cost=db_meeting.total_cost,
-        created_at=db_meeting.created_at
+        created_at=db_meeting.created_at,
     )
 
+
 @router.get(
-    "/meetings/{meeting_id}/cost", 
+    "/meetings/{meeting_id}/cost",
     response_model=MeetingCostCalculation,
     summary="Get Meeting Cost Calculation",
     description="Retrieve detailed cost calculation for a specific meeting with participant breakdown.",
@@ -520,42 +542,37 @@ async def get_meeting(
                                 "name": "John Doe",
                                 "role": "Senior Developer",
                                 "hourly_rate": 75.0,
-                                "cost": 75.0
+                                "cost": 75.0,
                             },
                             {
                                 "name": "Jane Smith",
-                                "role": "Product Manager", 
+                                "role": "Product Manager",
                                 "hourly_rate": 85.0,
-                                "cost": 85.0
-                            }
+                                "cost": 85.0,
+                            },
                         ],
-                        "calculation_time": "2025-01-15T10:00:00Z"
+                        "calculation_time": "2025-01-15T10:00:00Z",
                     }
                 }
-            }
+            },
         },
-        400: {
-            "description": "Invalid meeting ID format"
-        },
-        404: {
-            "description": "Meeting not found"
-        }
-    }
+        400: {"description": "Invalid meeting ID format"},
+        404: {"description": "Meeting not found"},
+    },
 )
 async def get_meeting_cost(
-    meeting_id: str,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_id: str, meeting_repo: MeetingRepository = Depends(get_meeting_repository)
 ):
     """
     Get the cost calculation for a specific meeting.
-    
+
     This endpoint:
     - Retrieves stored meeting data
     - Recalculates costs using current participant rates
     - Provides detailed cost breakdown per participant
     - Returns cost-per-minute analysis
     - Useful for audit trails and reporting
-    
+
     **Use Cases:**
     - Financial reporting and cost analysis
     - Meeting cost verification
@@ -567,34 +584,37 @@ async def get_meeting_cost(
         meeting_uuid = uuid.UUID(meeting_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid meeting ID format")
-    
+
     db_meeting = meeting_repo.get(meeting_uuid)
     if not db_meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
+
     # Convert participants from database format
     participants = []
     for mp in db_meeting.participants:
         if mp.participant:
-            participants.append(Participant(
-                id=str(mp.participant.id),
-                name=mp.participant.name,
-                email=mp.participant.email,
-                hourly_rate=mp.hourly_rate_at_time,
-                role=mp.participant.role,
-                department=mp.participant.department
-            ))
-    
+            participants.append(
+                Participant(
+                    id=str(mp.participant.id),
+                    name=mp.participant.name,
+                    email=mp.participant.email,
+                    hourly_rate=mp.hourly_rate_at_time,
+                    role=mp.participant.role,
+                    department=mp.participant.department,
+                )
+            )
+
     # Create Meeting object for calculation
     meeting_obj = Meeting(
         id=str(db_meeting.id),
         title=db_meeting.title,
         duration_minutes=db_meeting.duration_minutes,
         participants=participants,
-        start_time=db_meeting.start_time
+        start_time=db_meeting.start_time,
     )
-    
+
     return MeetingCostCalculator.calculate_meeting_cost(meeting_obj)
+
 
 @router.get(
     "/meetings/statistics/overview",
@@ -616,38 +636,38 @@ async def get_meeting_cost(
                         "cost_by_department": {
                             "Engineering": 25000.00,
                             "Product": 12000.00,
-                            "Marketing": 8000.00
+                            "Marketing": 8000.00,
                         },
                         "meetings_by_type": {
                             "standup": 60,
                             "sprint-planning": 30,
                             "review": 30,
-                            "retrospective": 30
+                            "retrospective": 30,
                         },
                         "cost_trends": {
                             "this_month": 3500.00,
                             "last_month": 3200.00,
-                            "percentage_change": 9.38
-                        }
+                            "percentage_change": 9.38,
+                        },
                     }
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def get_meetings_statistics(
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_repo: MeetingRepository = Depends(get_meeting_repository),
 ):
     """
     Get comprehensive cost statistics for all meetings.
-    
+
     This endpoint provides:
     - **Overall Metrics**: Total meetings, costs, and averages
     - **Cost Breakdown**: By department, team, and meeting type
     - **Trends Analysis**: Month-over-month cost changes
     - **Efficiency Metrics**: Average duration and participant counts
     - **Budget Insights**: Cost per minute and hourly rates
-    
+
     **Use Cases:**
     - Executive dashboards and reporting
     - Budget planning and cost control
@@ -657,56 +677,46 @@ async def get_meetings_statistics(
     """
     return meeting_repo.get_meeting_statistics()
 
+
 @router.delete(
     "/meetings/{meeting_id}",
     status_code=204,
     summary="Delete Meeting",
     description="Permanently delete a meeting record and all associated data.",
     responses={
-        204: {
-            "description": "Meeting deleted successfully"
-        },
+        204: {"description": "Meeting deleted successfully"},
         400: {
             "description": "Invalid meeting ID format",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Invalid meeting ID format"
-                    }
-                }
-            }
+                "application/json": {"example": {"detail": "Invalid meeting ID format"}}
+            },
         },
         404: {
             "description": "Meeting not found",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Meeting not found"
-                    }
-                }
-            }
-        }
-    }
+                "application/json": {"example": {"detail": "Meeting not found"}}
+            },
+        },
+    },
 )
 async def delete_meeting(
-    meeting_id: str,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_id: str, meeting_repo: MeetingRepository = Depends(get_meeting_repository)
 ):
     """
     Delete a meeting record permanently.
-    
+
     **⚠️ Warning**: This action is irreversible and will permanently delete:
     - Meeting metadata and details
     - Participant associations
     - Cost calculation history
     - Any related analytics data
-    
+
     **Use Cases:**
     - Remove duplicate or incorrect meeting records
     - Clean up test data
     - GDPR compliance and data retention policies
     - Administrative data management
-    
+
     **Best Practices:**
     - Consider archiving instead of deleting for audit purposes
     - Ensure proper authorization before deletion
@@ -717,12 +727,13 @@ async def delete_meeting(
         meeting_uuid = uuid.UUID(meeting_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid meeting ID format")
-    
+
     success = meeting_repo.delete(meeting_uuid)
     if not success:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
+
     return {"message": "Meeting deleted successfully"}
+
 
 @router.post(
     "/meetings/{meeting_id}/start",
@@ -737,10 +748,10 @@ async def delete_meeting(
                     "example": {
                         "message": "Meeting started successfully",
                         "status": "in_progress",
-                        "started_at": "2025-01-15T10:00:00Z"
+                        "started_at": "2025-01-15T10:00:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Cannot start meeting (invalid ID or already in progress)",
@@ -750,33 +761,30 @@ async def delete_meeting(
                         "detail": "Meeting not found or cannot be started (may already be in progress)"
                     }
                 }
-            }
+            },
         },
-        404: {
-            "description": "Meeting not found"
-        }
-    }
+        404: {"description": "Meeting not found"},
+    },
 )
 async def start_meeting(
-    meeting_id: str,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_id: str, meeting_repo: MeetingRepository = Depends(get_meeting_repository)
 ):
     """
     Start a meeting and begin cost tracking.
-    
+
     This endpoint:
     - Changes meeting status to 'in_progress'
     - Records the actual start time
     - Enables real-time cost tracking
     - Prevents duplicate starts
-    
+
     **Use Cases:**
     - Meeting room systems integration
     - Calendar application integration
     - Automated meeting tracking
     - Real-time cost monitoring initialization
     - Meeting attendance systems
-    
+
     **Status Transitions:**
     - 'scheduled' → 'in_progress'
     - Cannot start meetings already 'in_progress' or 'completed'
@@ -785,15 +793,16 @@ async def start_meeting(
         meeting_uuid = uuid.UUID(meeting_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid meeting ID format")
-    
+
     db_meeting = meeting_repo.start_meeting(meeting_uuid)
     if not db_meeting:
         raise HTTPException(
-            status_code=400, 
-            detail="Meeting not found or cannot be started (may already be in progress)"
+            status_code=400,
+            detail="Meeting not found or cannot be started (may already be in progress)",
         )
-    
+
     return {"message": "Meeting started successfully", "status": db_meeting.status}
+
 
 @router.post(
     "/meetings/{meeting_id}/end",
@@ -810,53 +819,48 @@ async def start_meeting(
                         "status": "completed",
                         "total_cost": 160.0,
                         "ended_at": "2025-01-15T11:00:00Z",
-                        "actual_duration_minutes": 60
+                        "actual_duration_minutes": 60,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Cannot end meeting (invalid ID or not in progress)",
             "content": {
                 "application/json": {
-                    "example": {
-                        "detail": "Meeting is not currently in progress"
-                    }
+                    "example": {"detail": "Meeting is not currently in progress"}
                 }
-            }
+            },
         },
-        404: {
-            "description": "Meeting not found"
-        }
-    }
+        404: {"description": "Meeting not found"},
+    },
 )
 async def end_meeting(
-    meeting_id: str,
-    meeting_repo: MeetingRepository = Depends(get_meeting_repository)
+    meeting_id: str, meeting_repo: MeetingRepository = Depends(get_meeting_repository)
 ):
     """
     End a meeting and calculate final costs.
-    
+
     This endpoint:
     - Changes meeting status to 'completed'
     - Records the actual end time
     - Calculates final meeting cost based on actual duration
     - Updates cost records for reporting
     - Finalizes meeting for billing and analytics
-    
+
     **Cost Calculation:**
     - Uses participant hourly rates at time of meeting
     - Calculates based on actual meeting duration
     - Stores final cost for reporting and analytics
     - Handles pro-rated costs for partial hours
-    
+
     **Use Cases:**
     - Meeting room systems integration
     - Automated cost finalization
     - Billing and accounting systems
     - Meeting analytics and reporting
     - Calendar system integration
-    
+
     **Status Transitions:**
     - 'in_progress' → 'completed'
     - Cannot end meetings not currently in progress
@@ -865,51 +869,52 @@ async def end_meeting(
         meeting_uuid = uuid.UUID(meeting_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid meeting ID format")
-    
+
     db_meeting = meeting_repo.get(meeting_uuid)
     if not db_meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    if db_meeting.status != 'in_progress':
+
+    if db_meeting.status != "in_progress":
         raise HTTPException(
-            status_code=400, 
-            detail="Meeting is not currently in progress"
+            status_code=400, detail="Meeting is not currently in progress"
         )
-    
+
     # Calculate final cost if not already calculated
     if not db_meeting.total_cost:
         # Convert participants for calculation
         participants = []
         for mp in db_meeting.participants:
             if mp.participant:
-                participants.append(Participant(
-                    id=str(mp.participant.id),
-                    name=mp.participant.name,
-                    email=mp.participant.email,
-                    hourly_rate=mp.hourly_rate_at_time,
-                    role=mp.participant.role,
-                    department=mp.participant.department
-                ))
-        
+                participants.append(
+                    Participant(
+                        id=str(mp.participant.id),
+                        name=mp.participant.name,
+                        email=mp.participant.email,
+                        hourly_rate=mp.hourly_rate_at_time,
+                        role=mp.participant.role,
+                        department=mp.participant.department,
+                    )
+                )
+
         # Create Meeting object for calculation
         meeting_obj = Meeting(
             id=str(db_meeting.id),
             title=db_meeting.title,
             duration_minutes=db_meeting.duration_minutes,
             participants=participants,
-            start_time=db_meeting.start_time
+            start_time=db_meeting.start_time,
         )
-        
+
         cost_calculation = MeetingCostCalculator.calculate_meeting_cost(meeting_obj)
         total_cost = cost_calculation.total_cost
     else:
         total_cost = db_meeting.total_cost
-    
+
     # End the meeting
     updated_meeting = meeting_repo.end_meeting(meeting_uuid, total_cost)
-    
+
     return {
-        "message": "Meeting ended successfully", 
+        "message": "Meeting ended successfully",
         "status": updated_meeting.status,
-        "total_cost": updated_meeting.total_cost
+        "total_cost": updated_meeting.total_cost,
     }

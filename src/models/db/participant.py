@@ -6,11 +6,12 @@ import uuid
 
 from src.database import Base
 
+
 class DBParticipant(Base):
     """Database model for participants."""
-    
+
     __tablename__ = "participants"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(255), nullable=False, index=True)
     email = Column(String(255), unique=True, index=True)
@@ -20,9 +21,13 @@ class DBParticipant(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
-    meeting_participants = relationship("DBMeetingParticipant", back_populates="participant")
-    
+    meeting_participants = relationship(
+        "DBMeetingParticipant", back_populates="participant"
+    )
+
     def __repr__(self):
-        return f"<Participant(id={self.id}, name='{self.name}', rate=${self.hourly_rate})>"
+        return (
+            f"<Participant(id={self.id}, name='{self.name}', rate=${self.hourly_rate})>"
+        )

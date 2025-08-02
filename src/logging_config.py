@@ -4,13 +4,14 @@ import sys
 from pathlib import Path
 from src.config import settings
 
+
 def setup_logging():
     """Configure application logging."""
-    
+
     # Create logs directory
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
-    
+
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -75,13 +76,14 @@ def setup_logging():
             },
         },
     }
-    
+
     logging.config.dictConfig(logging_config)
-    
+
     # Set up application logger
     logger = logging.getLogger("clockbucks")
     logger.info(f"Logging configured for {settings.ENVIRONMENT} environment")
     return logger
+
 
 # Create application logger
 app_logger = setup_logging()

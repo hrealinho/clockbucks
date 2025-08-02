@@ -1,20 +1,71 @@
 [flake8]
+# Maximum line length to match Black's default
 max-line-length = 88
-extend-ignore = E203, E266, E501, W503, F403, F401
-max-complexity = 18
-select = B,C,E,F,W,T4,B9
+
+# Exclude directories and files from linting
 exclude = 
     .git,
     __pycache__,
     .venv,
+    venv,
     env,
+    .env,
+    node_modules,
     migrations,
-    alembic,
+    alembic/versions,
     build,
     dist,
+    *.egg-info,
     .eggs,
-    *.egg
+    *.egg,
+    .pytest_cache,
+    .mypy_cache,
+    docs/_build
 
-per-file-ignores =
-    __init__.py:F401
-    tests/*:S101,S106
+# Select error codes to check for
+select = 
+    E,      # pycodestyle errors
+    W,      # pycodestyle warnings
+    F,      # pyflakes
+    C,      # flake8-comprehensions
+    B,      # flake8-bugbear
+    S,      # flake8-bandit (security)
+    I,      # flake8-import-order
+    D,      # flake8-docstrings
+
+# Ignore specific error codes
+ignore = 
+    E203,   # whitespace before ':' (conflicts with Black)
+    E501,   # line too long (handled by Black)
+    W503,   # line break before binary operator (conflicts with Black)
+    D100,   # Missing docstring in public module (too strict for some cases)
+    D104,   # Missing docstring in public package (not always needed)
+    D107,   # Missing docstring in __init__ (not always needed)
+    D203,   # 1 blank line required before class docstring (conflicts with D211)
+    D213,   # Multi-line docstring summary should start at the second line (conflicts with D212)
+    S101,   # Use of assert detected (common in tests)
+    B008,   # Do not perform function calls in argument defaults (FastAPI dependency injection)
+
+# Import order configuration
+import-order-style = google
+application-import-names = src,tests
+
+# Docstring configuration
+docstring-convention = google
+
+# McCabe complexity threshold
+max-complexity = 10
+
+# Per-file ignores
+per-file-ignores = 
+    # Tests can have longer lines and different docstring requirements
+    tests/*:D100,D101,D102,D103,S101,E501
+    # Config files don't need docstrings
+    src/config.py:D100
+    # __init__.py files don't always need docstrings
+    **/__init__.py:D100,F401
+    # Alembic files have their own style
+    alembic/*:D100,D101,D102,D103,E501
+    # Allow print statements in run.py and dev scripts
+    run.py:T201
+    dev_test.py:T201,D100,D101,D102,D103,S101

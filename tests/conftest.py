@@ -21,6 +21,7 @@ engine = create_engine(
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 def get_test_settings() -> Settings:
     """Get test configuration."""
     return Settings(
@@ -31,6 +32,7 @@ def get_test_settings() -> Settings:
         RATE_LIMIT_ENABLED=False,
     )
 
+
 def override_get_db():
     """Override database dependency for testing."""
     try:
@@ -39,13 +41,16 @@ def override_get_db():
     finally:
         db.close()
 
+
 def override_get_settings():
     """Override settings dependency for testing."""
     return get_test_settings()
 
+
 # Override dependencies
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_settings] = override_get_settings
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -53,6 +58,7 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -65,11 +71,13 @@ def db_session():
         db.close()
         Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture(scope="function")
 def client(db_session) -> Generator[TestClient, None, None]:
     """Create a test client."""
     with TestClient(app) as test_client:
         yield test_client
+
 
 @pytest.fixture
 def sample_participant_data():
@@ -79,8 +87,9 @@ def sample_participant_data():
         "email": "john.doe@test.com",
         "hourly_rate": 75.0,
         "role": "Senior Developer",
-        "department": "Engineering"
+        "department": "Engineering",
     }
+
 
 @pytest.fixture
 def sample_meeting_data():
@@ -95,13 +104,13 @@ def sample_meeting_data():
                 "name": "John Doe",
                 "email": "john.doe@test.com",
                 "hourly_rate": 75.0,
-                "role": "Senior Developer"
+                "role": "Senior Developer",
             },
             {
                 "name": "Jane Smith",
-                "email": "jane.smith@test.com", 
+                "email": "jane.smith@test.com",
                 "hourly_rate": 85.0,
-                "role": "Product Manager"
-            }
-        ]
+                "role": "Product Manager",
+            },
+        ],
     }
