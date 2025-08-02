@@ -1,0 +1,27 @@
+# Development and CI/CD Dependencies
+# Add these to your requirements.txt or create a separate requirements-dev.txt
+
+# Code Quality
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+mypy==1.8.0
+
+# Security
+bandit[toml]==1.7.5
+safety==2.3.5
+
+# Documentation
+pdoc3==0.10.0
+mkdocs==1.5.3
+mkdocs-material==9.5.3
+mkdocs-mermaid2-plugin==1.1.1
+
+# Testing (if not already in main requirements.txt)
+pytest-cov==4.0.0
+pytest-asyncio==0.23.2
+
+# Build tools
+build==1.0.3
+setuptools==69.0.3
+wheel==0.42.0

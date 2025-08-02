@@ -1,0 +1,110 @@
+name: 🔄 Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-dependencies:
+    name: "📦 Update Dependencies"
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "📥 Checkout code"
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: "🐍 Set up Python"
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        
+    - name: "📦 Install pip-tools"
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-tools
+        
+    - name: "🔄 Update requirements"
+      run: |
+        pip-compile --upgrade requirements.in
+        
+    - name: "🧪 Test with new dependencies"
+      run: |
+        pip install -r requirements.txt
+        python -m pytest tests/ --tb=short
+        
+    - name: "🔍 Check for security vulnerabilities"
+      run: |
+        pip install safety
+        safety check
+        
+    - name: "📝 Create Pull Request"
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "🔄 Automated dependency updates"
+        body: |
+          ## 📦 Dependency Updates
+          
+          This PR contains automated dependency updates.
+          
+          ### Changes
+          - Updated Python dependencies to latest versions
+          - Security vulnerability checks passed
+          - All tests are passing
+          
+          ### Review Checklist
+          - [ ] Review dependency changes
+          - [ ] Check for breaking changes
+          - [ ] Verify test results
+          - [ ] Approve and merge if everything looks good
+          
+          ---
+          *This PR was created automatically by the dependency update workflow.*
+        branch: automated/dependency-updates
+        delete-branch: true
+        
+  update-github-actions:
+    name: "⚙️ Update GitHub Actions"
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "📥 Checkout code"
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: "🔄 Update GitHub Actions"
+      uses: nicknovitski/update-actions@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: "📝 Create Pull Request for Actions"
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update GitHub Actions"
+        title: "⚙️ Update GitHub Actions to latest versions"
+        body: |
+          ## ⚙️ GitHub Actions Updates
+          
+          This PR updates GitHub Actions to their latest versions.
+          
+          ### Changes
+          - Updated action versions in workflow files
+          - Ensures compatibility and security updates
+          
+          ### Review Checklist
+          - [ ] Review action version changes
+          - [ ] Check workflow syntax
+          - [ ] Verify no breaking changes
+          - [ ] Test workflows if needed
+          
+          ---
+          *This PR was created automatically by the actions update workflow.*
+        branch: automated/actions-updates
+        delete-branch: true

@@ -1,0 +1,23 @@
+{
+  "replacementPatterns": [
+    {
+      "pattern": "^http://127.0.0.1",
+      "replacement": "http://localhost"
+    }
+  ],
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://your-domain.com"
+    },
+    {
+      "pattern": "^mailto:"
+    }
+  ],
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "2s",
+  "aliveStatusCodes": [200, 206]
+}

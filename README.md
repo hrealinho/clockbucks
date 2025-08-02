@@ -3,6 +3,9 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/fastapi-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI/CD Pipeline](https://github.com/your-username/clock-bucks/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/your-username/clock-bucks/actions)
+[![Security Scan](https://github.com/your-username/clock-bucks/actions/workflows/security.yml/badge.svg)](https://github.com/your-username/clock-bucks/actions)
+[![Documentation](https://github.com/your-username/clock-bucks/actions/workflows/documentation.yml/badge.svg)](https://github.com/your-username/clock-bucks/actions)
 
 A production-ready FastAPI backend service that estimates the cost of meetings based on participant salaries. Perfect for remote teams to understand the financial impact of their meetings and optimize time allocation.
 
@@ -32,7 +35,32 @@ A production-ready FastAPI backend service that estimates the cost of meetings b
 - PostgreSQL (for production) or SQLite (for development)
 - Docker (optional)
 
-### Local Development
+### 🚀 One-Click Start (Recommended)
+
+**Windows:**
+```cmd
+start.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+This script will:
+1. Set up a Python virtual environment
+2. Install all dependencies
+3. Set up the database
+4. Give you options to:
+   - Run a quick demo
+   - Start the API server
+   - Run tests
+   - Open API documentation
+
+### Manual Setup
+
+### Manual Setup
 
 1. **Clone and setup environment**:
 ```bash
@@ -383,7 +411,56 @@ az aks create --resource-group rg --name clockbucks
 - **Resource Limits**: Kubernetes resource limits configured
 - **Horizontal Scaling**: HPA configured for auto-scaling
 
-## 🛠️ Development Workflow
+## � CI/CD Pipeline
+
+This project includes a comprehensive CI/CD pipeline with GitHub Actions:
+
+### 🔄 Automated Workflows
+
+**Main CI/CD Pipeline** (`.github/workflows/ci-cd.yml`):
+- ✅ **Code Quality**: Black formatting, isort, flake8 linting, mypy type checking
+- 🧪 **Testing**: Full test suite with coverage reporting across Python 3.11 & 3.12
+- 🔒 **Security**: Bandit security scanning, Safety vulnerability checks
+- 🐳 **Docker**: Multi-platform builds (AMD64, ARM64) with container scanning
+- 🚀 **Deployment**: Automated staging and production deployments with blue-green strategy
+- 📊 **Monitoring**: Health checks, performance tests, and notifications
+
+**Security Scanning** (`.github/workflows/security.yml`):
+- 🔍 **CodeQL Analysis**: Advanced semantic code analysis
+- 🛡️ **Dependency Review**: Automated security review of dependencies
+- 🔐 **Secrets Scanning**: TruffleHog secrets detection
+- 🐳 **Container Security**: Trivy vulnerability scanning
+
+**Documentation** (`.github/workflows/documentation.yml`):
+- 📚 **API Docs**: Automatic API documentation generation
+- 🔗 **Link Checking**: Validates all documentation links
+- 🚀 **GitHub Pages**: Automated deployment to GitHub Pages
+
+**Dependency Updates** (`.github/workflows/dependencies.yml`):
+- 📦 **Auto Updates**: Weekly dependency updates with automated PRs
+- ⚙️ **Actions Updates**: GitHub Actions version updates
+
+### 🎯 Deployment Strategy
+
+**Staging Environment**:
+- Triggered on `develop` branch pushes
+- Automatic deployment to staging namespace
+- Smoke tests and health checks
+
+**Production Environment**:
+- Triggered on `main` branch pushes or releases
+- Blue-green deployment strategy
+- Comprehensive health checks and rollback capability
+- Required manual approval
+
+### 📋 Setup Instructions
+
+1. **Repository Setup**: See [`.github/SETUP.md`](.github/SETUP.md) for detailed configuration
+2. **Secrets Configuration**: Add required secrets for deployments and notifications
+3. **Environment Setup**: Configure staging and production environments
+4. **Branch Protection**: Enable required status checks
+
+## �🛠️ Development Workflow
 
 1. **Feature Development**:
    - Create feature branch

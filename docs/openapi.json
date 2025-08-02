@@ -1,0 +1,604 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Clock Bucks API - Meeting Cost Calculator",
+    "description": "# Clock Bucks API - Meeting Cost Calculator\n\nA comprehensive backend service that calculates the cost of meetings based on participant salaries and hourly rates.\n\n## Features\n- **Meeting Management**: Create, update, and track meetings with cost calculations\n- **Participant Management**: Manage participants with roles and hourly rates\n- **Cost Calculations**: Real-time cost tracking during meetings\n- **Statistics**: Meeting analytics and cost reporting\n- **Data Persistence**: File-based storage with plans for database integration\n\n## Use Cases\n- Track meeting costs for budget planning\n- Optimize meeting efficiency by understanding cost implications\n- Generate cost reports for management and accounting\n- Real-time cost awareness during ongoing meetings\n\n## Architecture\n- **FastAPI**: High-performance async Python web framework\n- **Pydantic**: Data validation and serialization\n- **Repository Pattern**: Clean separation of data access logic\n- **File Storage**: JSON-based persistence (interim solution)\n- **Comprehensive Testing**: pytest-based test suite\n\n## Contact\n- **Developer**: Henrique Realinho\n- **Repository**: https://github.com/hrealinho/clockbucks",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Clock Bucks API Support",
+      "url": "https://github.com/hrealinho/clockbucks",
+      "email": "support@clockbucks.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.clockbucks.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "meetings",
+      "description": "Operations with meetings. Create, read, update, delete meetings and calculate costs.",
+      "externalDocs": {
+        "description": "Meeting Management Documentation",
+        "url": "https://docs.clockbucks.com/meetings"
+      }
+    },
+    {
+      "name": "participants",
+      "description": "Manage meeting participants, their roles, and hourly rates.",
+      "externalDocs": {
+        "description": "Participant Management Documentation",
+        "url": "https://docs.clockbucks.com/participants"
+      }
+    },
+    {
+      "name": "system",
+      "description": "System health, metrics, and API information endpoints."
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["system"],
+        "summary": "API Information",
+        "description": "Get basic API information and service details",
+        "operationId": "root",
+        "responses": {
+          "200": {
+            "description": "API information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {"type": "string"},
+                    "version": {"type": "string"},
+                    "environment": {"type": "string"},
+                    "docs_url": {"type": "string"},
+                    "health_check": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["system"],
+        "summary": "Health Check",
+        "description": "Check API health status for monitoring and load balancers",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string"},
+                    "service": {"type": "string"},
+                    "version": {"type": "string"},
+                    "environment": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meetings/calculate": {
+      "post": {
+        "tags": ["meetings"],
+        "summary": "Calculate Meeting Cost",
+        "description": "Calculate the total cost of a meeting based on participants and duration. This endpoint performs cost calculations and optionally stores the meeting record.",
+        "operationId": "calculate_meeting_cost",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingCreate"
+              },
+              "example": {
+                "title": "Sprint Planning",
+                "duration_minutes": 60,
+                "participants": [
+                  {
+                    "name": "John Doe",
+                    "hourly_rate": 75.0,
+                    "role": "Senior Developer"
+                  },
+                  {
+                    "name": "Jane Smith",
+                    "hourly_rate": 85.0,
+                    "role": "Product Manager"
+                  }
+                ],
+                "start_time": "2025-01-15T10:00:00Z",
+                "description": "Planning meeting for next sprint",
+                "meeting_type": "planning"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cost calculation completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingCostCalculation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid meeting data"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/v1/meetings/real-time-cost": {
+      "post": {
+        "tags": ["meetings"],
+        "summary": "Calculate Real-Time Meeting Cost",
+        "description": "Calculate the current cost of an ongoing meeting based on elapsed time. Perfect for live cost tracking during meetings.",
+        "operationId": "calculate_real_time_cost",
+        "parameters": [
+          {
+            "name": "elapsed_minutes",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Minutes elapsed since meeting started"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Participant"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Real-time cost calculated successfully"
+          },
+          "400": {
+            "description": "Invalid elapsed time"
+          }
+        }
+      }
+    },
+    "/api/v1/meetings": {
+      "post": {
+        "tags": ["meetings"],
+        "summary": "Create New Meeting",
+        "description": "Create a new meeting record with participants and cost calculation. This stores the meeting for future reference and reporting.",
+        "operationId": "create_meeting",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Meeting created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid meeting data or creation failed"
+          }
+        }
+      },
+      "get": {
+        "tags": ["meetings"],
+        "summary": "List All Meetings",
+        "description": "Retrieve all meetings with optional filtering and pagination. Perfect for meeting history, reporting, and analytics.",
+        "operationId": "get_all_meetings",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Number of meetings to skip for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": "Maximum number of meetings to return"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by meeting status (e.g., 'scheduled', 'in-progress', 'completed')"
+          },
+          {
+            "name": "meeting_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by meeting type (e.g., 'sprint-planning', 'standup', 'review')"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search term to match against meeting title and description"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meetings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MeetingResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          }
+        }
+      }
+    },
+    "/api/v1/participants": {
+      "post": {
+        "tags": ["participants"],
+        "summary": "Create New Participant",
+        "description": "Create a new participant with their role and hourly rate information for meeting cost calculations.",
+        "operationId": "create_participant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Participant created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid participant data"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "tags": ["participants"],
+        "summary": "List All Participants",
+        "description": "Retrieve all participants with their current hourly rates and role information.",
+        "operationId": "get_all_participants",
+        "responses": {
+          "200": {
+            "description": "Participants retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipantResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Participant": {
+        "type": "object",
+        "required": ["name", "hourly_rate"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique participant identifier"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Participant's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Participant's email address"
+          },
+          "hourly_rate": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Hourly rate in USD"
+          },
+          "role": {
+            "type": "string",
+            "description": "Job title or role"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department or team"
+          }
+        },
+        "example": {
+          "name": "John Doe",
+          "email": "john.doe@company.com",
+          "hourly_rate": 75.0,
+          "role": "Senior Developer",
+          "department": "Engineering"
+        }
+      },
+      "ParticipantCreate": {
+        "type": "object",
+        "required": ["name", "hourly_rate"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Participant's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Participant's email address"
+          },
+          "hourly_rate": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Hourly rate in USD"
+          },
+          "role": {
+            "type": "string",
+            "description": "Job title or role"
+          },
+          "department": {
+            "type": "string",
+            "description": "Department or team"
+          }
+        }
+      },
+      "ParticipantResponse": {
+        "allOf": [
+          {"$ref": "#/components/schemas/Participant"},
+          {
+            "type": "object",
+            "required": ["id", "created_at"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique participant identifier"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Account creation timestamp"
+              }
+            }
+          }
+        ]
+      },
+      "MeetingCreate": {
+        "type": "object",
+        "required": ["title", "duration_minutes", "participants"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Meeting title"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Meeting duration in minutes"
+          },
+          "participants": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Participant"
+            },
+            "description": "List of meeting participants"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Meeting start time"
+          },
+          "description": {
+            "type": "string",
+            "description": "Meeting description"
+          },
+          "meeting_type": {
+            "type": "string",
+            "description": "Type of meeting"
+          }
+        }
+      },
+      "MeetingResponse": {
+        "allOf": [
+          {"$ref": "#/components/schemas/MeetingCreate"},
+          {
+            "type": "object",
+            "required": ["id", "created_at"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Unique meeting identifier"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Meeting end time"
+              },
+              "total_cost": {
+                "type": "number",
+                "description": "Total meeting cost in USD"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Meeting creation timestamp"
+              }
+            }
+          }
+        ]
+      },
+      "MeetingCostCalculation": {
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "title", 
+          "duration_minutes",
+          "total_cost",
+          "cost_per_minute",
+          "participants_count",
+          "participant_costs",
+          "calculation_time"
+        ],
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Meeting identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "Meeting title"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "total_cost": {
+            "type": "number",
+            "description": "Total cost of the meeting in USD"
+          },
+          "cost_per_minute": {
+            "type": "number",
+            "description": "Cost per minute in USD"
+          },
+          "participants_count": {
+            "type": "integer",
+            "description": "Number of participants"
+          },
+          "participant_costs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "role": {"type": "string"},
+                "hourly_rate": {"type": "number"},
+                "cost": {"type": "number"}
+              }
+            },
+            "description": "Individual participant costs"
+          },
+          "calculation_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the calculation was performed"
+          }
+        },
+        "example": {
+          "meeting_id": "123e4567-e89b-12d3-a456-426614174000",
+          "title": "Sprint Planning",
+          "duration_minutes": 60,
+          "total_cost": 160.0,
+          "cost_per_minute": 2.67,
+          "participants_count": 2,
+          "participant_costs": [
+            {
+              "name": "John Doe",
+              "role": "Senior Developer",
+              "hourly_rate": 75.0,
+              "cost": 75.0
+            },
+            {
+              "name": "Jane Smith",
+              "role": "Product Manager",
+              "hourly_rate": 85.0,
+              "cost": 85.0
+            }
+          ],
+          "calculation_time": "2025-01-15T10:00:00Z"
+        }
+      }
+    }
+  }
+}

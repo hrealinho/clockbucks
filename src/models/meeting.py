@@ -37,6 +37,18 @@ class MeetingCreate(BaseModel):
     duration_minutes: int = Field(..., gt=0)
     participants: List[Participant] = Field(..., min_items=1)
     start_time: Optional[datetime] = None
+    description: Optional[str] = None
+    meeting_type: Optional[str] = None
+
+class MeetingUpdate(BaseModel):
+    title: Optional[str] = None
+    duration_minutes: Optional[int] = Field(None, gt=0)
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    description: Optional[str] = None
+    meeting_type: Optional[str] = None
+    status: Optional[str] = None
+    total_cost: Optional[float] = None
 
 class MeetingCostCalculation(BaseModel):
     meeting_id: str

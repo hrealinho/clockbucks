@@ -54,10 +54,10 @@ class ParticipantUpdate(BaseModel):
 
 class Participant(ParticipantBase):
     """Schema for participant responses."""
-    id: UUID
+    id: Optional[UUID] = None  # Made optional for backward compatibility
     is_active: bool = True
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_orm = True

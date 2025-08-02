@@ -1,0 +1,107 @@
+site_name: Clock Bucks API Documentation
+site_description: Meeting Cost Calculator API - Track and calculate meeting costs in real-time
+site_author: Clock Bucks Team
+site_url: https://clockbucks-docs.your-domain.com
+
+# Repository
+repo_name: clockbucks
+repo_url: https://github.com/hrealinho/clockbucks
+edit_uri: edit/main/docs/
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: quickstart.md
+    - Configuration: configuration.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Meetings: api/meetings.md
+    - Participants: api/participants.md
+    - Authentication: api/authentication.md
+  - Deployment:
+    - Docker: deployment/docker.md
+    - Kubernetes: deployment/kubernetes.md
+    - Production Setup: deployment/production.md
+  - Development:
+    - Setup: development/setup.md
+    - Testing: development/testing.md
+    - Contributing: development/contributing.md
+  - Changelog: changelog.md
+
+# Theme
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+
+# Plugins
+plugins:
+  - search
+  - mermaid2:
+      arguments:
+        theme: auto
+
+# Extra CSS
+extra_css:
+  - stylesheets/extra.css
+
+# Extra JavaScript
+extra_javascript:
+  - javascripts/extra.js
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-username/clock-bucks
+    - icon: fontawesome/solid/globe
+      link: https://clockbucks.your-domain.com
+  version:
+    provider: mike

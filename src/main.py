@@ -39,12 +39,81 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="A backend service that estimates the cost of meetings based on participant salaries",
+    description="""
+    # Clock Bucks API - Meeting Cost Calculator
+
+    A comprehensive backend service that calculates the cost of meetings based on participant salaries and hourly rates.
+
+    ## Features
+    - **Meeting Management**: Create, update, and track meetings with cost calculations
+    - **Participant Management**: Manage participants with roles and hourly rates
+    - **Cost Calculations**: Real-time cost tracking during meetings
+    - **Statistics**: Meeting analytics and cost reporting
+    - **Data Persistence**: File-based storage with plans for database integration
+
+    ## Use Cases
+    - Track meeting costs for budget planning
+    - Optimize meeting efficiency by understanding cost implications
+    - Generate cost reports for management and accounting
+    - Real-time cost awareness during ongoing meetings
+
+    ## Architecture
+    - **FastAPI**: High-performance async Python web framework
+    - **Pydantic**: Data validation and serialization
+    - **Repository Pattern**: Clean separation of data access logic
+    - **File Storage**: JSON-based persistence (interim solution)
+    - **Comprehensive Testing**: pytest-based test suite
+    
+    ## Contact
+    - **Developer**: Henrique Realinho
+    - **Repository**: https://github.com/hrealinho/clockbucks
+    """,
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    contact={
+        "name": "Clock Bucks API Support",
+        "url": "https://github.com/hrealinho/clockbucks",
+        "email": "support@clockbucks.com"
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    servers=[
+        {
+            "url": "http://localhost:8000",
+            "description": "Development server"
+        },
+        {
+            "url": "https://api.clockbucks.com",
+            "description": "Production server"
+        }
+    ],
+    tags_metadata=[
+        {
+            "name": "meetings",
+            "description": "Operations with meetings. Create, read, update, delete meetings and calculate costs.",
+            "externalDocs": {
+                "description": "Meeting Management Documentation",
+                "url": "https://docs.clockbucks.com/meetings",
+            },
+        },
+        {
+            "name": "participants",
+            "description": "Manage meeting participants, their roles, and hourly rates.",
+            "externalDocs": {
+                "description": "Participant Management Documentation", 
+                "url": "https://docs.clockbucks.com/participants",
+            },
+        },
+        {
+            "name": "system",
+            "description": "System health, metrics, and API information endpoints.",
+        }
+    ]
 )
 
 # Add middleware
@@ -111,7 +180,7 @@ app.include_router(
 )
 
 # Root endpoints
-@app.get("/")
+@app.get("/", tags=["system"], summary="API Information", description="Get basic API information and service details")
 async def root():
     """Root endpoint with basic API information."""
     return {
@@ -122,7 +191,7 @@ async def root():
         "health_check": "/health"
     }
 
-@app.get("/health")
+@app.get("/health", tags=["system"], summary="Health Check", description="Check API health status for monitoring and load balancers")
 async def health_check():
     """Health check endpoint for monitoring."""
     return {
@@ -132,7 +201,7 @@ async def health_check():
         "environment": settings.ENVIRONMENT
     }
 
-@app.get("/metrics")
+@app.get("/metrics", tags=["system"], summary="Service Metrics", description="Get basic service metrics (extensible with Prometheus)")
 async def metrics():
     """Basic metrics endpoint (can be extended with Prometheus)."""
     if not settings.ENABLE_METRICS:
