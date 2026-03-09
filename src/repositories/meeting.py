@@ -64,7 +64,6 @@ class MeetingRepository(BaseRepository[DBMeeting, MeetingCreate, MeetingUpdate])
 
     def create(self, obj_in: MeetingCreate) -> DBMeeting:
         """Create a new meeting with participants."""
-        # Create the meeting
         db_meeting = DBMeeting(
             title=obj_in.title,
             description=getattr(obj_in, "description", None),
@@ -75,22 +74,44 @@ class MeetingRepository(BaseRepository[DBMeeting, MeetingCreate, MeetingUpdate])
         )
 
         self.db.add(db_meeting)
-        self.db.flush()  # Get the ID without committing
+        self.db.flush()
 
-        # Add participants
         for participant_data in obj_in.participants:
-            # Get the actual participant to get current hourly rate
-            db_participant = (
-                self.db.query(DBParticipant)
-                .filter(DBParticipant.id == participant_data.id)
-                .first()
-            )
+            if participant_data.id:
+                db_participant = (
+                    self.db.query(DBParticipant)
+                    .filter(DBParticipant.id == participant_data.id)
+                    .first()
+                )
+                if db_participant:
+                    meeting_participant = DBMeetingParticipant(
+                        meeting_id=db_meeting.id,
+                        participant_id=db_participant.id,
+                        hourly_rate_at_time=db_participant.hourly_rate,
+                        attendance_status="confirmed",
+                    )
+                    self.db.add(meeting_participant)
+            else:
+                db_participant = (
+                    self.db.query(DBParticipant)
+                    .filter(DBParticipant.name == participant_data.name)
+                    .first()
+                )
+                if not db_participant:
+                    db_participant = DBParticipant(
+                        name=participant_data.name,
+                        email=getattr(participant_data, "email", None),
+                        hourly_rate=participant_data.hourly_rate,
+                        role=getattr(participant_data, "role", None),
+                        department=getattr(participant_data, "department", None),
+                    )
+                    self.db.add(db_participant)
+                    self.db.flush()
 
-            if db_participant:
                 meeting_participant = DBMeetingParticipant(
                     meeting_id=db_meeting.id,
-                    participant_id=participant_data.id,
-                    hourly_rate_at_time=db_participant.hourly_rate,
+                    participant_id=db_participant.id,
+                    hourly_rate_at_time=participant_data.hourly_rate,
                     attendance_status="confirmed",
                 )
                 self.db.add(meeting_participant)
@@ -101,7 +122,7 @@ class MeetingRepository(BaseRepository[DBMeeting, MeetingCreate, MeetingUpdate])
 
     def update(self, db_obj: DBMeeting, obj_in: MeetingUpdate) -> DBMeeting:
         """Update a meeting."""
-        update_data = obj_in.dict(exclude_unset=True)
+        update_data = obj_in.model_dump(exclude_unset=True)
 
         for field, value in update_data.items():
             if hasattr(db_obj, field):
@@ -120,6 +141,16 @@ class MeetingRepository(BaseRepository[DBMeeting, MeetingCreate, MeetingUpdate])
             self.db.commit()
             return True
         return False
+
+    def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
+        """Count meetings with optional filtering."""
+        query = self.db.query(self.model)
+        if filters:
+            if "status" in filters:
+                query = query.filter(self.model.status == filters["status"])
+            if "meeting_type" in filters:
+                query = query.filter(self.model.meeting_type == filters["meeting_type"])
+        return query.count()
 
     def get_by_status(self, status: str) -> List[DBMeeting]:
         """Get meetings by status."""

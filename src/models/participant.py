@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -15,7 +15,8 @@ class ParticipantBase(BaseModel):
     role: Optional[str] = Field(None, max_length=255, description="Job role/title")
     department: Optional[str] = Field(None, max_length=255, description="Department")
 
-    @validator("hourly_rate")
+    @field_validator("hourly_rate")
+    @classmethod
     def validate_hourly_rate(cls, v):
         if v <= 0:
             raise ValueError("Hourly rate must be positive")
@@ -27,18 +28,19 @@ class ParticipantBase(BaseModel):
 class ParticipantCreate(ParticipantBase):
     """Schema for creating a participant."""
 
-    pass
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "John Doe",
-                "email": "john.doe@company.com",
-                "hourly_rate": 75.0,
-                "role": "Senior Developer",
-                "department": "Engineering",
-            }
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "John Doe",
+                    "email": "john.doe@company.com",
+                    "hourly_rate": 75.0,
+                    "role": "Senior Developer",
+                    "department": "Engineering",
+                }
+            ]
         }
+    }
 
 
 class ParticipantUpdate(BaseModel):
@@ -51,7 +53,8 @@ class ParticipantUpdate(BaseModel):
     department: Optional[str] = Field(None, max_length=255)
     is_active: Optional[bool] = None
 
-    @validator("hourly_rate")
+    @field_validator("hourly_rate")
+    @classmethod
     def validate_hourly_rate(cls, v):
         if v is not None:
             if v <= 0:
@@ -64,26 +67,29 @@ class ParticipantUpdate(BaseModel):
 class Participant(ParticipantBase):
     """Schema for participant responses."""
 
-    id: Optional[UUID] = None  # Made optional for backward compatibility
+    id: Optional[UUID] = None
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_orm = True
-        schema_extra = {
-            "example": {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "name": "John Doe",
-                "email": "john.doe@company.com",
-                "hourly_rate": 75.0,
-                "role": "Senior Developer",
-                "department": "Engineering",
-                "is_active": True,
-                "created_at": "2025-01-15T10:00:00Z",
-                "updated_at": "2025-01-15T10:00:00Z",
-            }
-        }
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "name": "John Doe",
+                    "email": "john.doe@company.com",
+                    "hourly_rate": 75.0,
+                    "role": "Senior Developer",
+                    "department": "Engineering",
+                    "is_active": True,
+                    "created_at": "2025-01-15T10:00:00Z",
+                    "updated_at": "2025-01-15T10:00:00Z",
+                }
+            ]
+        },
+    }
 
 
 class ParticipantSummary(BaseModel):
@@ -91,10 +97,9 @@ class ParticipantSummary(BaseModel):
 
     id: UUID
     name: str
-    email: Optional[EmailStr]
+    email: Optional[EmailStr] = None
     hourly_rate: float
-    role: Optional[str]
-    department: Optional[str]
+    role: Optional[str] = None
+    department: Optional[str] = None
 
-    class Config:
-        from_orm = True
+    model_config = {"from_attributes": True}

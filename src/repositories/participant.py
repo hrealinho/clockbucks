@@ -89,7 +89,7 @@ class ParticipantRepository(
                     f"Participant with email {obj_in.email} already exists"
                 )
 
-            db_obj = DBParticipant(**obj_in.dict())
+            db_obj = DBParticipant(**obj_in.model_dump())
             self.db.add(db_obj)
             self.db.commit()
             self.db.refresh(db_obj)
@@ -114,7 +114,7 @@ class ParticipantRepository(
                         f"Participant with email {obj_in.email} already exists"
                     )
 
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(db_obj, field, value)
 

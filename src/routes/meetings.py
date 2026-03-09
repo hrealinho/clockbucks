@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from datetime import datetime
 import uuid
+import logging
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("clockbucks.routes.meetings")
 
 from src.models.meeting import (
     Meeting,
@@ -133,7 +136,7 @@ async def calculate_meeting_cost(
 
     except Exception as e:
         # If database save fails, still return the calculation
-        print(f"Warning: Could not save meeting to database: {e}")
+        logger.warning(f"Could not save meeting to database: {e}")
 
     return cost_calculation
 
@@ -731,8 +734,6 @@ async def delete_meeting(
     success = meeting_repo.delete(meeting_uuid)
     if not success:
         raise HTTPException(status_code=404, detail="Meeting not found")
-
-    return {"message": "Meeting deleted successfully"}
 
 
 @router.post(

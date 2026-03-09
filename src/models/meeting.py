@@ -9,37 +9,40 @@ class Meeting(BaseModel):
     title: str = Field(..., min_length=1, description="Meeting title")
     duration_minutes: int = Field(..., gt=0, description="Meeting duration in minutes")
     participants: List[Participant] = Field(
-        ..., min_items=1, description="List of meeting participants"
+        ..., min_length=1, description="List of meeting participants"
     )
     start_time: Optional[datetime] = Field(None, description="Meeting start time")
     end_time: Optional[datetime] = Field(None, description="Meeting end time")
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "title": "Sprint Planning",
-                "duration_minutes": 60,
-                "participants": [
-                    {
-                        "name": "John Doe",
-                        "hourly_rate": 75.0,
-                        "role": "Senior Developer",
-                    },
-                    {
-                        "name": "Jane Smith",
-                        "hourly_rate": 85.0,
-                        "role": "Product Manager",
-                    },
-                ],
-                "start_time": "2025-01-15T10:00:00Z",
-            }
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "title": "Sprint Planning",
+                    "duration_minutes": 60,
+                    "participants": [
+                        {
+                            "name": "John Doe",
+                            "hourly_rate": 75.0,
+                            "role": "Senior Developer",
+                        },
+                        {
+                            "name": "Jane Smith",
+                            "hourly_rate": 85.0,
+                            "role": "Product Manager",
+                        },
+                    ],
+                    "start_time": "2025-01-15T10:00:00Z",
+                }
+            ]
         }
+    }
 
 
 class MeetingCreate(BaseModel):
     title: str = Field(..., min_length=1)
     duration_minutes: int = Field(..., gt=0)
-    participants: List[Participant] = Field(..., min_items=1)
+    participants: List[Participant] = Field(..., min_length=1)
     start_time: Optional[datetime] = None
     description: Optional[str] = None
     meeting_type: Optional[str] = None

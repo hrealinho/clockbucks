@@ -1,5 +1,6 @@
 import time
 import uuid
+import threading
 from typing import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -101,31 +102,26 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.calls = calls
         self.period = period
-        self.clients = {}
+        self.clients: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health checks
         if request.url.path in ["/health", "/docs", "/openapi.json"]:
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
         current_time = time.time()
+        cutoff = current_time - self.period
 
-        # Clean old entries
-        self.clients = {
-            ip: times
-            for ip, times in self.clients.items()
-            if any(t > current_time - self.period for t in times)
-        }
+        with self._lock:
+            self.clients = {
+                ip: [t for t in times if t > cutoff]
+                for ip, times in self.clients.items()
+            }
 
-        # Check rate limit
-        if client_ip in self.clients:
-            # Filter recent requests
-            recent_requests = [
-                t for t in self.clients[client_ip] if t > current_time - self.period
-            ]
+            recent = self.clients.get(client_ip, [])
 
-            if len(recent_requests) >= self.calls:
+            if len(recent) >= self.calls:
                 logger.warning(f"Rate limit exceeded for {client_ip}")
                 return Response(
                     content="Rate limit exceeded",
@@ -138,14 +134,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     },
                 )
 
-            self.clients[client_ip] = recent_requests + [current_time]
-        else:
-            self.clients[client_ip] = [current_time]
+            recent.append(current_time)
+            self.clients[client_ip] = recent
 
         response = await call_next(request)
 
-        # Add rate limit headers
-        remaining = max(0, self.calls - len(self.clients[client_ip]))
+        with self._lock:
+            remaining = max(0, self.calls - len(self.clients.get(client_ip, [])))
         response.headers["X-RateLimit-Limit"] = str(self.calls)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["X-RateLimit-Reset"] = str(int(current_time + self.period))

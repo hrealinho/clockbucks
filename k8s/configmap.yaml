@@ -7,17 +7,14 @@ data:
   DEBUG: "false"
   HOST: "0.0.0.0"
   PORT: "8000"
-  ALLOWED_ORIGINS: "*"
+  ALLOWED_ORIGINS: "https://your-domain.com"
   API_PREFIX: "/api"
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: clockbucks-secrets
-  namespace: clockbucks
-type: Opaque
-stringData:
-  POSTGRES_DB: "clockbucks"
-  POSTGRES_USER: "clockbucks"
-  POSTGRES_PASSWORD: "your-secure-password-here"
-  DATABASE_URL: "postgresql://clockbucks:your-secure-password-here@postgres:5432/clockbucks"
+# Create this secret manually or via a secrets manager, NOT in version control:
+#   kubectl create secret generic clockbucks-secrets \
+#     --namespace=clockbucks \
+#     --from-literal=POSTGRES_DB=clockbucks \
+#     --from-literal=POSTGRES_USER=clockbucks \
+#     --from-literal=POSTGRES_PASSWORD=<real-password> \
+#     --from-literal=DATABASE_URL=postgresql://clockbucks:<real-password>@postgres:5432/clockbucks \
+#     --from-literal=SECRET_KEY=<real-secret-key>

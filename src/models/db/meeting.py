@@ -1,5 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey, Table
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey, Uuid
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -12,7 +11,7 @@ class DBMeeting(Base):
 
     __tablename__ = "meetings"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
     title = Column(String(500), nullable=False, index=True)
     description = Column(Text)
     duration_minutes = Column(Integer, nullable=False)
@@ -41,10 +40,10 @@ class DBMeetingParticipant(Base):
 
     __tablename__ = "meeting_participants"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    meeting_id = Column(UUID(as_uuid=True), ForeignKey("meetings.id"), nullable=False)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
+    meeting_id = Column(Uuid, ForeignKey("meetings.id"), nullable=False)
     participant_id = Column(
-        UUID(as_uuid=True), ForeignKey("participants.id"), nullable=False
+        Uuid, ForeignKey("participants.id"), nullable=False
     )
     hourly_rate_at_time = Column(Float, nullable=False)  # Rate at the time of meeting
     individual_cost = Column(Float)

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
+import time
 
 from src.config import settings
 from src.logging_config import app_logger
@@ -18,10 +19,12 @@ from src.routes import meetings, participants
 logger = logging.getLogger("clockbucks.main")
 
 
+_start_time = time.time()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
@@ -35,7 +38,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown
     logger.info("Application shutting down")
 
 
@@ -213,10 +215,9 @@ async def metrics():
     if not settings.ENABLE_METRICS:
         raise HTTPException(status_code=404, detail="Metrics not enabled")
 
-    # Basic metrics - extend with prometheus_client for production
+    uptime_seconds = time.time() - _start_time
     return {
         "service": "clock-bucks-api",
         "version": settings.APP_VERSION,
-        "uptime": "calculated_uptime_here",  # Implement actual uptime calculation
-        "request_count": "total_requests_here",  # Implement request counter
+        "uptime_seconds": round(uptime_seconds, 2),
     }

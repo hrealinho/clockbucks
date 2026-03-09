@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from typing import Generator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -8,10 +7,8 @@ from sqlalchemy.pool import StaticPool
 
 from src.main import app
 from src.database import get_db, Base
-from src.config import get_settings, Settings
 
-# Test database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_clockbucks.db"
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -22,19 +19,7 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_test_settings() -> Settings:
-    """Get test configuration."""
-    return Settings(
-        DEBUG=True,
-        DATABASE_URL=SQLALCHEMY_DATABASE_URL,
-        ENVIRONMENT="testing",
-        SECRET_KEY="test-secret-key",
-        RATE_LIMIT_ENABLED=False,
-    )
-
-
 def override_get_db():
-    """Override database dependency for testing."""
     try:
         db = TestingSessionLocal()
         yield db
@@ -42,22 +27,7 @@ def override_get_db():
         db.close()
 
 
-def override_get_settings():
-    """Override settings dependency for testing."""
-    return get_test_settings()
-
-
-# Override dependencies
 app.dependency_overrides[get_db] = override_get_db
-app.dependency_overrides[get_settings] = override_get_settings
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="function")
@@ -81,7 +51,6 @@ def client(db_session) -> Generator[TestClient, None, None]:
 
 @pytest.fixture
 def sample_participant_data():
-    """Sample participant data for testing."""
     return {
         "name": "John Doe",
         "email": "john.doe@test.com",
@@ -93,7 +62,6 @@ def sample_participant_data():
 
 @pytest.fixture
 def sample_meeting_data():
-    """Sample meeting data for testing."""
     return {
         "title": "Sprint Planning",
         "description": "Planning for next sprint",
