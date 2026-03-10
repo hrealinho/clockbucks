@@ -180,13 +180,13 @@ class MeetingRepository(BaseRepository[DBMeeting, MeetingCreate, MeetingUpdate])
             func.sum(self.model.total_cost).label("total_cost"),
             func.avg(self.model.total_cost).label("average_cost"),
             func.avg(self.model.duration_minutes).label("average_duration"),
-            func.sum(case([(self.model.status == "completed", 1)], else_=0)).label(
+            func.sum(case((self.model.status == "completed", 1), else_=0)).label(
                 "completed_meetings"
             ),
-            func.sum(case([(self.model.status == "in_progress", 1)], else_=0)).label(
+            func.sum(case((self.model.status == "in_progress", 1), else_=0)).label(
                 "active_meetings"
             ),
-            func.sum(case([(self.model.status == "scheduled", 1)], else_=0)).label(
+            func.sum(case((self.model.status == "scheduled", 1), else_=0)).label(
                 "scheduled_meetings"
             ),
         ).first()

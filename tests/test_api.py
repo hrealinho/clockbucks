@@ -20,14 +20,9 @@ def test_root_endpoint(client: TestClient):
 
 
 def test_api_documentation(client: TestClient):
-    from src.config import settings
-
     response = client.get("/docs")
-    if settings.DEBUG:
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-    else:
-        assert response.status_code == 404
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
 
 
 def test_openapi_schema(client: TestClient):

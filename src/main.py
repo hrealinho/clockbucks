@@ -75,8 +75,8 @@ app = FastAPI(
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
     contact={
         "name": "Clock Bucks API Support",
         "url": "https://github.com/hrealinho/clockbucks",
